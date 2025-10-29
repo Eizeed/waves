@@ -1,3 +1,4 @@
+use acoustid_api::AcoustIdApi;
 use clap::Parser;
 use color_eyre::Result;
 use serde_json::Value;
@@ -6,6 +7,8 @@ const DOWNLOAD_DIR: &'static str = "/home/lf/test_music";
 
 #[derive(Parser, Debug)]
 struct Args {
+    #[arg(long = "client")]
+    client: String,
     #[arg(short = 'm', long = "metadata")]
     metadata: bool,
     url_list: Vec<String>,
@@ -15,13 +18,13 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     for u in args.url_list.iter() {
-        download(u)?;
+        download(u, &args.client)?;
     }
 
     Ok(())
 }
 
-fn download(url: &str) -> Result<()> {
+fn download(url: &str, key: &str) -> Result<()> {
     let output = std::process::Command::new("yt-dlp")
         .args([
             "--print",
@@ -51,8 +54,14 @@ fn download(url: &str) -> Result<()> {
 
     let fpcalc = String::from_utf8_lossy(&output.stdout);
 
-    let value: Value = serde_json::from_str(&fpcalc)?;
-    println!("{:?}", value["duration"]);
+    let mut value: Value = serde_json::from_str(&fpcalc)?;
+    let str = value["fingerprint"].take().to_string().replace("\"", "");
+    let dur = value["duration"].as_f64().unwrap().floor() as u64;
+
+    let api = AcoustIdApi::new(key.to_string());
+    let v = api.request(dur, str).send()?;
+
+    println!("{:#?}", v);
 
     Ok(())
 }
