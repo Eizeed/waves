@@ -1,6 +1,7 @@
-use acoustid_api::AcoustIdApi;
+use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Parser;
 use color_eyre::Result;
+use metadata::Metadata;
 use serde_json::Value;
 
 const DOWNLOAD_DIR: &'static str = "/home/lf/test_music";
@@ -59,9 +60,16 @@ fn download(url: &str, key: &str) -> Result<()> {
     let dur = value["duration"].as_f64().unwrap().floor() as u64;
 
     let api = AcoustIdApi::new(key.to_string());
-    let v = api.request(dur, str).send()?;
+    let res = api.request(dur, str).send()?;
 
-    println!("{:#?}", v);
+    let metadata = match res {
+        Response::Ok(res) => Metadata::try_from(res)?,
+        Response::Error { error, status: _ } => {
+            return Err(error.into());
+        }
+    };
+
+    println!("{:#?}", metadata);
 
     Ok(())
 }

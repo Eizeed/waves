@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Display};
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,35 +18,35 @@ pub struct OkResponse {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ResResult {
-    id: Uuid,
-    recordings: Vec<Recording>,
-    score: f32,
+    pub id: Uuid,
+    pub recordings: Vec<Recording>,
+    pub score: f32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Recording {
-    id: Uuid,
-    artists: Option<Vec<Artist>>,
-    duration: Option<f32>,
-    releasegroups: Option<Vec<ReleaseGroup>>,
-    title: Option<String>,
+    pub id: Uuid,
+    pub artists: Option<Vec<Artist>>,
+    pub duration: Option<f32>,
+    pub releasegroups: Option<Vec<ReleaseGroup>>,
+    pub title: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Artist {
-    id: Uuid,
-    name: String,
+    pub id: Uuid,
+    pub name: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ReleaseGroup {
-    id: Uuid,
-    artists: Vec<Artist>,
+    pub id: Uuid,
+    pub artists: Vec<Artist>,
     #[serde(alias = "secondarytypes")]
-    secondary_types: Option<Vec<String>>,
-    title: String,
+    pub secondary_types: Option<Vec<String>>,
+    pub title: String,
     #[serde(alias = "type")]
-    release_type: String,
+    pub release_type: ReleaseType,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -56,11 +58,21 @@ pub enum Status {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Error {
-    code: i32,
-    message: String,
+    pub code: i32,
+    pub message: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self, f)
+    }
+}
+
+impl std::error::Error for Error {}
+unsafe impl Send for Error {}
+unsafe impl Sync for Error {}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub enum ReleaseType {
     Single,
     Album,

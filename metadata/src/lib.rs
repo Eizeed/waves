@@ -1,9 +1,26 @@
+use std::fmt::Debug;
+use std::fmt::Display;
+
 use acoustid_api::response::OkResponse;
 use acoustid_api::response::Recording;
 use acoustid_api::response::ReleaseType;
 
+#[derive(Debug)]
 pub enum Error {
-    InvalidMetadata,
+    InvalidArtistName,
+    InvalidReleaseType,
+    InvalidTrackTitle,
+    InvalidReleaseTitle,
+    InvalidReleaseArtistNames,
+    NoReleaseGroup,
+}
+
+impl std::error::Error for Error {}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self, f)
+    }
 }
 
 #[derive(Debug)]
@@ -42,7 +59,7 @@ impl TryFrom<OkResponse> for Metadata {
                                         .find(|s| *s == "Remix")
                                         .is_some()
                                 });
-                                if let Some(r) = r { r } else { false }
+                                if let Some(r) = r { r } else { true }
                             })
                             .collect()
                     });
@@ -59,6 +76,10 @@ impl TryFrom<OkResponse> for Metadata {
                 }
                 if track_title.is_none() {
                     track_title = Some(rec.title.unwrap());
+                }
+
+                if rec.releasegroups.as_ref().unwrap().is_empty() {
+                    return Err(Error::NoReleaseGroup);
                 }
 
                 for rg in rec.releasegroups.unwrap() {
@@ -81,11 +102,11 @@ impl TryFrom<OkResponse> for Metadata {
         }
 
         Ok(Metadata {
-            artist_names: artist_names.ok_or(Error::InvalidMetadata)?,
-            release_type: release_type.ok_or(Error::InvalidMetadata)?,
-            track_title: track_title.ok_or(Error::InvalidMetadata)?,
-            release_title: release_title.ok_or(Error::InvalidMetadata)?,
-            release_artists: release_artists.ok_or(Error::InvalidMetadata)?,
+            artist_names: artist_names.ok_or(Error::InvalidArtistName)?,
+            release_type: release_type.ok_or(Error::InvalidReleaseType)?,
+            track_title: track_title.ok_or(Error::InvalidTrackTitle)?,
+            release_title: release_title.ok_or(Error::InvalidReleaseTitle)?,
+            release_artists: release_artists.ok_or(Error::InvalidReleaseArtistNames)?,
         })
     }
 }
