@@ -4,6 +4,7 @@ use std::fmt::Display;
 use acoustid_api::response::OkResponse;
 use acoustid_api::response::Recording;
 use acoustid_api::response::ReleaseType;
+use acoustid_api::response::ResResult;
 
 #[derive(Debug)]
 pub enum Error {
@@ -12,7 +13,6 @@ pub enum Error {
     InvalidTrackTitle,
     InvalidReleaseTitle,
     InvalidReleaseArtistNames,
-    NoReleaseGroup,
 }
 
 impl std::error::Error for Error {}
@@ -42,6 +42,7 @@ impl Metadata {
     }
 
     pub fn from_response(res: OkResponse) -> Result<Option<Metadata>, Error> {
+        // If there is no info in database
         if res.results.is_empty() {
             return Ok(None);
         }
@@ -52,34 +53,44 @@ impl Metadata {
         let mut release_title: Option<String> = None;
         let mut release_artists: Option<Vec<String>> = None;
 
-        let res_recordings = res.results.into_iter().map(|mut r| {
-            r.recordings = r
-                .recordings
-                .into_iter()
-                .filter(|rec| {
-                    rec.artists.is_some() && rec.releasegroups.is_some() && rec.title.is_some()
-                })
-                .map(|mut recording| {
-                    recording.releasegroups = recording.releasegroups.map(|rg| {
-                        rg.into_iter()
-                            .filter(|rg| {
-                                let r = rg.secondary_types.as_ref().map(|t| {
-                                    t.into_iter()
-                                        .map(|s| (*s).as_str())
-                                        .find(|s| *s == "Remix")
-                                        .is_some()
-                                });
-                                if let Some(r) = r { r } else { true }
-                            })
-                            .collect()
-                    });
-                    recording
-                })
-                .collect::<Vec<Recording>>();
-            r
-        });
+        let results = res
+            .results
+            .into_iter()
+            .map(|mut r| {
+                r.recordings = r
+                    .recordings
+                    .into_iter()
+                    .filter(|rec| {
+                        rec.artists.is_some() && rec.releasegroups.is_some() && rec.title.is_some()
+                    })
+                    .map(|mut recording| {
+                        recording.releasegroups = recording.releasegroups.map(|rg| {
+                            rg.into_iter()
+                                .filter(|rg| {
+                                    let r = rg.secondary_types.as_ref().map(|t| {
+                                        t.into_iter()
+                                            .map(|s| (*s).as_str())
+                                            .find(|s| *s == "Remix")
+                                            .is_some()
+                                    });
+                                    if let Some(r) = r { r } else { true }
+                                })
+                                .collect()
+                        });
+                        recording
+                    })
+                    .filter(|recroding| recroding.releasegroups.is_some())
+                    .collect::<Vec<Recording>>();
+                r
+            })
+            .collect::<Vec<ResResult>>();
 
-        for res in res_recordings {
+        // If there is no valid recordings after filtering
+        if results.is_empty() {
+            return Ok(None);
+        }
+
+        for res in results.into_iter() {
             for rec in res.recordings {
                 if artist_names.is_none() {
                     artist_names = Some(rec.artists.unwrap().into_iter().map(|a| a.name).collect());
@@ -88,13 +99,9 @@ impl Metadata {
                     track_title = Some(rec.title.unwrap());
                 }
 
-                if rec.releasegroups.as_ref().unwrap().is_empty() {
-                    return Err(Error::NoReleaseGroup);
-                }
-
                 for rg in rec.releasegroups.unwrap() {
                     if let Some(rt) = release_type.as_ref() {
-                        if matches!(rt, ReleaseType::Album) || matches!(rt, ReleaseType::Ep) {
+                        if matches!(rt, ReleaseType::Album) || matches!(rt, ReleaseType::EP) {
                             continue;
                         } else {
                             release_type = Some(rg.release_type);

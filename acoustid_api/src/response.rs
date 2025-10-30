@@ -76,6 +76,6 @@ unsafe impl Sync for Error {}
 pub enum ReleaseType {
     Single,
     Album,
-    Ep,
+    EP,
     Other,
 }
