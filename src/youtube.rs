@@ -2,9 +2,11 @@ use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Args;
 use color_eyre::Result;
 use metadata::Metadata;
-use serde_json::Value;
 
-use crate::Execute;
+use crate::{
+    Execute,
+    fpcalc::{Fpcalc, fpcalc},
+};
 
 const DOWNLOAD_DIR: &'static str = "/home/lf/test_music";
 
@@ -20,14 +22,32 @@ pub struct YoutubeArgs {
 impl Execute for YoutubeArgs {
     fn execute(&self) -> Result<()> {
         for u in self.url_list.iter() {
-            download(u, self.client.as_str())?;
+            let path = download(u)?;
+
+            let Fpcalc {
+                duration,
+                fingerprint,
+                ..
+            } = fpcalc(path.as_str())?;
+
+            let api = AcoustIdApi::new(self.client.to_string());
+            let res = api.request(duration, fingerprint).send()?;
+
+            let metadata = match res {
+                Response::Ok(res) => Metadata::try_from(res)?,
+                Response::Error { error, status: _ } => {
+                    return Err(error.into());
+                }
+            };
+
+            println!("{:#?}", metadata);
         }
 
         Ok(())
     }
 }
 
-fn download(url: &str, key: &str) -> Result<()> {
+fn download(url: &str) -> Result<String> {
     let output = std::process::Command::new("yt-dlp")
         .args([
             "--print",
@@ -45,33 +65,8 @@ fn download(url: &str, key: &str) -> Result<()> {
         ])
         .output()?;
 
-    let file_path = String::from_utf8_lossy(&output.stdout)
+    Ok(String::from_utf8_lossy(&output.stdout)
         .trim()
         .replace("\"", "")
-        .to_string();
-
-    let output = std::process::Command::new("fpcalc")
-        .arg(&file_path)
-        .arg("-json")
-        .output()?;
-
-    let fpcalc = String::from_utf8_lossy(&output.stdout);
-
-    let mut value: Value = serde_json::from_str(&fpcalc)?;
-    let str = value["fingerprint"].take().to_string().replace("\"", "");
-    let dur = value["duration"].as_f64().unwrap().floor() as u64;
-
-    let api = AcoustIdApi::new(key.to_string());
-    let res = api.request(dur, str).send()?;
-
-    let metadata = match res {
-        Response::Ok(res) => Metadata::try_from(res)?,
-        Response::Error { error, status: _ } => {
-            return Err(error.into());
-        }
-    };
-
-    println!("{:#?}", metadata);
-
-    Ok(())
+        .to_string())
 }

@@ -4,6 +4,7 @@ use color_eyre::Result;
 use crate::youtube::YoutubeArgs;
 
 mod youtube;
+mod fpcalc;
 
 #[derive(Parser, Debug)]
 enum Args {
