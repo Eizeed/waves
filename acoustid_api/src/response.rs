@@ -4,14 +4,14 @@ use uuid::Uuid;
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(untagged)]
 pub enum Response {
-    Ok {
-        results: Vec<ResResult>,
-        status: Status,
-    },
-    Error {
-        error: Error,
-        status: Status,
-    },
+    Ok(OkResponse),
+    Error { error: Error, status: Status },
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OkResponse {
+    pub results: Vec<ResResult>,
+    pub status: Status,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -25,7 +25,7 @@ pub struct ResResult {
 pub struct Recording {
     id: Uuid,
     artists: Option<Vec<Artist>>,
-    duraiton: Option<f32>,
+    duration: Option<f32>,
     releasegroups: Option<Vec<ReleaseGroup>>,
     title: Option<String>,
 }
@@ -40,8 +40,10 @@ pub struct Artist {
 pub struct ReleaseGroup {
     id: Uuid,
     artists: Vec<Artist>,
+    #[serde(alias = "secondarytypes")]
+    secondary_types: Option<Vec<String>>,
     title: String,
-    #[serde(rename(serialize = "type", deserialize = "type"))]
+    #[serde(alias = "type")]
     release_type: String,
 }
 
@@ -56,4 +58,12 @@ pub enum Status {
 pub struct Error {
     code: i32,
     message: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub enum ReleaseType {
+    Single,
+    Album,
+    Ep,
+    Other,
 }
