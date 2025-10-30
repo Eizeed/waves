@@ -15,7 +15,7 @@ pub struct YoutubeArgs {
     #[arg(long = "client")]
     pub client: String,
     #[arg(short = 'm', long = "metadata")]
-    pub metadata: bool,
+    // pub metadata: bool,
     pub url_list: Vec<String>,
 }
 
@@ -34,7 +34,7 @@ impl Execute for YoutubeArgs {
             let res = api.request(duration, fingerprint).send()?;
 
             let metadata = match res {
-                Response::Ok(res) => Metadata::try_from(res)?,
+                Response::Ok(res) => Metadata::from_response(res)?,
                 Response::Error { error, status: _ } => {
                     return Err(error.into());
                 }

@@ -5,6 +5,7 @@ use crate::response::Response;
 pub mod response;
 
 const ACOUSTID_API_URL: &'static str = "https://api.acoustid.org/v2/lookup";
+
 pub struct AcoustIdApi {
     client_api_key: String,
 }
@@ -29,6 +30,7 @@ impl AcoustIdApi {
 
 impl Request {
     pub fn send(self) -> Result<Response> {
+        // println!("REQEST URL: {}", self.url);
         reqwest::blocking::get(self.url)?
             .json()
             .map_err(|e| e.into())

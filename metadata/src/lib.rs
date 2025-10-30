@@ -32,17 +32,19 @@ pub struct Metadata {
     pub release_artists: Vec<String>,
 }
 
-impl TryFrom<OkResponse> for Metadata {
-    type Error = Error;
+impl Metadata {
+    pub fn from_response(res: OkResponse) -> Result<Option<Metadata>, Error> {
+        if res.results.is_empty() {
+            return Ok(None);
+        }
 
-    fn try_from(value: OkResponse) -> Result<Metadata, Error> {
         let mut artist_names: Option<Vec<String>> = None;
         let mut release_type: Option<ReleaseType> = None;
         let mut track_title: Option<String> = None;
         let mut release_title: Option<String> = None;
         let mut release_artists: Option<Vec<String>> = None;
 
-        let res_recordings = value.results.into_iter().map(|mut r| {
+        let res_recordings = res.results.into_iter().map(|mut r| {
             r.recordings = r
                 .recordings
                 .into_iter()
@@ -101,12 +103,12 @@ impl TryFrom<OkResponse> for Metadata {
             }
         }
 
-        Ok(Metadata {
+        Ok(Some(Metadata {
             artist_names: artist_names.ok_or(Error::InvalidArtistName)?,
             release_type: release_type.ok_or(Error::InvalidReleaseType)?,
             track_title: track_title.ok_or(Error::InvalidTrackTitle)?,
             release_title: release_title.ok_or(Error::InvalidReleaseTitle)?,
             release_artists: release_artists.ok_or(Error::InvalidReleaseArtistNames)?,
-        })
+        }))
     }
 }
