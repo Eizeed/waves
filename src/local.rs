@@ -1,6 +1,7 @@
 use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Args;
 use metadata::Metadata;
+use color_eyre::Result;
 
 use crate::{
     Execute,
@@ -15,7 +16,7 @@ pub struct LocalArgs {
 }
 
 impl Execute for LocalArgs {
-    fn execute(&self) -> color_eyre::eyre::Result<()> {
+    fn execute(&self) -> Result<()> {
         for path in self.paths.iter() {
             let Fpcalc {
                 duration,
