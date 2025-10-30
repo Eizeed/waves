@@ -69,8 +69,6 @@ impl Display for Error {
 }
 
 impl std::error::Error for Error {}
-unsafe impl Send for Error {}
-unsafe impl Sync for Error {}
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub enum ReleaseType {
