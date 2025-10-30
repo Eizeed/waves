@@ -34,7 +34,11 @@ pub struct Metadata {
 
 impl Metadata {
     pub fn file_name(&self) -> String {
-        format!("{} - {}.mp3", self.artist_names.join(", "), self.track_title)
+        format!(
+            "{} - {}.mp3",
+            self.artist_names.join(", "),
+            self.track_title
+        )
     }
 
     pub fn from_response(res: OkResponse) -> Result<Option<Metadata>, Error> {

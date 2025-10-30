@@ -1,7 +1,7 @@
 use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Args;
-use metadata::Metadata;
 use color_eyre::Result;
+use metadata::Metadata;
 
 use crate::{
     Execute,
