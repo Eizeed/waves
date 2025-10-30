@@ -19,7 +19,7 @@ pub struct OkResponse {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ResResult {
     pub id: Uuid,
-    pub recordings: Vec<Recording>,
+    pub recordings: Option<Vec<Recording>>,
     pub score: f32,
 }
 

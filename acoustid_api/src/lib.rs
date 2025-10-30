@@ -30,6 +30,7 @@ impl AcoustIdApi {
 
 impl Request {
     pub fn send(self) -> Result<Response> {
+        // println!("{}", self.url);
         reqwest::blocking::get(self.url)?
             .json()
             .map_err(|e| e.into())

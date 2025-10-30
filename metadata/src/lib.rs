@@ -56,31 +56,36 @@ impl Metadata {
         let results = res
             .results
             .into_iter()
+            .filter(|r| r.recordings.is_some())
             .map(|mut r| {
-                r.recordings = r
-                    .recordings
-                    .into_iter()
-                    .filter(|rec| {
-                        rec.artists.is_some() && rec.releasegroups.is_some() && rec.title.is_some()
-                    })
-                    .map(|mut recording| {
-                        recording.releasegroups = recording.releasegroups.map(|rg| {
-                            rg.into_iter()
-                                .filter(|rg| {
-                                    let r = rg.secondary_types.as_ref().map(|t| {
-                                        t.into_iter()
-                                            .map(|s| (*s).as_str())
-                                            .find(|s| *s == "Remix")
-                                            .is_some()
-                                    });
-                                    if let Some(r) = r { r } else { true }
-                                })
-                                .collect()
-                        });
-                        recording
-                    })
-                    .filter(|recroding| recroding.releasegroups.is_some())
-                    .collect::<Vec<Recording>>();
+                r.recordings = Some(
+                    r.recordings
+                        .unwrap()
+                        .into_iter()
+                        .filter(|rec| {
+                            rec.artists.is_some()
+                                && rec.releasegroups.is_some()
+                                && rec.title.is_some()
+                        })
+                        .map(|mut recording| {
+                            recording.releasegroups = recording.releasegroups.map(|rg| {
+                                rg.into_iter()
+                                    .filter(|rg| {
+                                        let r = rg.secondary_types.as_ref().map(|t| {
+                                            t.into_iter()
+                                                .map(|s| (*s).as_str())
+                                                .find(|s| *s == "Remix")
+                                                .is_some()
+                                        });
+                                        if let Some(r) = r { r } else { true }
+                                    })
+                                    .collect()
+                            });
+                            recording
+                        })
+                        .filter(|recroding| recroding.releasegroups.is_some())
+                        .collect::<Vec<Recording>>(),
+                );
                 r
             })
             .collect::<Vec<ResResult>>();
@@ -91,7 +96,7 @@ impl Metadata {
         }
 
         for res in results.into_iter() {
-            for rec in res.recordings {
+            for rec in res.recordings.unwrap() {
                 if artist_names.is_none() {
                     artist_names = Some(rec.artists.unwrap().into_iter().map(|a| a.name).collect());
                 }
