@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Args;
 use color_eyre::Result;
@@ -34,7 +36,12 @@ impl Execute for LocalArgs {
                 }
             };
 
-            println!("{:#?}", metadata);
+            if let Some(mt) = metadata {
+                let res = mt.apply_to_file(path.into());
+                if res.is_ok() {
+                    println!("Done");
+                }
+            };
         }
 
         Ok(())

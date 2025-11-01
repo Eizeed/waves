@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 acoustid_api = { path = "../acoustid_api" }
+color-eyre = "0.6.5"
+lofty = "0.22.4"

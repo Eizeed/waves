@@ -1,10 +1,19 @@
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::path::PathBuf;
 
 use acoustid_api::response::OkResponse;
 use acoustid_api::response::Recording;
 use acoustid_api::response::ReleaseType;
 use acoustid_api::response::ResResult;
+
+use color_eyre::Result;
+use lofty::config::WriteOptions;
+use lofty::file::AudioFile;
+use lofty::file::TaggedFileExt;
+use lofty::tag::ItemKey;
+use lofty::tag::ItemValue;
+use lofty::tag::TagItem;
 
 #[derive(Debug)]
 pub enum Error {
@@ -13,6 +22,7 @@ pub enum Error {
     InvalidTrackTitle,
     InvalidReleaseTitle,
     InvalidReleaseArtistNames,
+    NoPrimaryTag,
 }
 
 impl std::error::Error for Error {}
@@ -39,6 +49,42 @@ impl Metadata {
             self.artist_names.join(", "),
             self.track_title
         )
+    }
+
+    pub fn apply_to_file(self, filepath: PathBuf) -> Result<()> {
+        let mut file = lofty::read_from_path(&filepath)?;
+        let tags = file.primary_tag_mut().ok_or(Error::NoPrimaryTag)?;
+        let parent = filepath.parent().unwrap();
+        let mut new_path = PathBuf::new();
+        new_path.push(parent);
+        new_path.push(format!(
+            "{} - {}.mp3",
+            self.artist_names.join(", "),
+            self.track_title.as_str()
+        ));
+
+        tags.insert(TagItem::new(
+            ItemKey::TrackArtist,
+            ItemValue::Text(self.artist_names.join(", ")),
+        ));
+        tags.insert(TagItem::new(
+            ItemKey::TrackTitle,
+            ItemValue::Text(self.track_title),
+        ));
+        tags.insert(TagItem::new(
+            ItemKey::AlbumTitle,
+            ItemValue::Text(self.release_title.clone()),
+        ));
+        tags.insert(TagItem::new(
+            ItemKey::AlbumArtist,
+            ItemValue::Text(self.release_artists.join(", ")),
+        ));
+
+        file.save_to_path(&filepath, WriteOptions::new())?;
+
+        std::fs::rename(&filepath, new_path)?;
+
+        Ok(())
     }
 
     pub fn from_response(res: OkResponse) -> Result<Option<Metadata>, Error> {
