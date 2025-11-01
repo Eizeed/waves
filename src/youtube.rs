@@ -14,14 +14,14 @@ const DOWNLOAD_DIR: &'static str = "/home/lf/test_music";
 pub struct YoutubeArgs {
     #[arg(long = "client")]
     pub client: String,
-    #[arg(short = 'm', long = "metadata")]
-    // pub metadata: bool,
     pub url_list: Vec<String>,
+    #[arg(short = 'm', long = "metadata")]
+    pub metadata: bool,
 }
 
 impl Execute for YoutubeArgs {
     fn execute(&self) -> Result<()> {
-        for u in self.url_list.iter() {
+        for (i, u) in self.url_list.iter().enumerate() {
             let path = download(u)?;
 
             let Fpcalc {
@@ -40,7 +40,23 @@ impl Execute for YoutubeArgs {
                 }
             };
 
-            println!("{:#?}", metadata);
+            if let Some(mt) = metadata
+                && self.metadata
+            {
+                match mt.apply_to_file(path.into()) {
+                    Ok(new_path) => {
+                        println!(
+                            "Saved {} out of {}. Path: {}",
+                            i + 1,
+                            self.url_list.len(),
+                            new_path.to_string_lossy()
+                        );
+                    }
+                    Err(e) => {
+                        println!("{}", e)
+                    }
+                }
+            };
         }
 
         Ok(())

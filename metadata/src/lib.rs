@@ -51,7 +51,7 @@ impl Metadata {
         )
     }
 
-    pub fn apply_to_file(self, filepath: PathBuf) -> Result<()> {
+    pub fn apply_to_file(self, filepath: PathBuf) -> Result<PathBuf> {
         let mut file = lofty::read_from_path(&filepath)?;
         let tags = file.primary_tag_mut().ok_or(Error::NoPrimaryTag)?;
         let parent = filepath.parent().unwrap();
@@ -82,9 +82,9 @@ impl Metadata {
 
         file.save_to_path(&filepath, WriteOptions::new())?;
 
-        std::fs::rename(&filepath, new_path)?;
+        std::fs::rename(&filepath, &new_path)?;
 
-        Ok(())
+        Ok(new_path)
     }
 
     pub fn from_response(res: OkResponse) -> Result<Option<Metadata>, Error> {

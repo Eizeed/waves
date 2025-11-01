@@ -15,11 +15,13 @@ pub struct LocalArgs {
     #[arg(long = "client")]
     pub client: String,
     pub paths: Vec<String>,
+    #[arg(short = 'm', long = "metadata")]
+    pub metadata: bool,
 }
 
 impl Execute for LocalArgs {
     fn execute(&self) -> Result<()> {
-        for path in self.paths.iter() {
+        for (i, path) in self.paths.iter().enumerate() {
             let Fpcalc {
                 duration,
                 fingerprint,
@@ -36,10 +38,21 @@ impl Execute for LocalArgs {
                 }
             };
 
-            if let Some(mt) = metadata {
-                let res = mt.apply_to_file(path.into());
-                if res.is_ok() {
-                    println!("Done");
+            if let Some(mt) = metadata
+                && self.metadata
+            {
+                match mt.apply_to_file(path.into()) {
+                    Ok(new_path) => {
+                        println!(
+                            "Saved {} out of {}. Path: {}",
+                            i + 1,
+                            self.paths.len(),
+                            new_path.to_string_lossy()
+                        );
+                    }
+                    Err(e) => {
+                        println!("{}", e)
+                    }
                 }
             };
         }
