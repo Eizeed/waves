@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use acoustid_api::{AcoustIdApi, response::Response};
 use clap::Args;
 use color_eyre::Result;
@@ -22,14 +20,10 @@ pub struct LocalArgs {
 impl Execute for LocalArgs {
     fn execute(&self) -> Result<()> {
         for (i, path) in self.paths.iter().enumerate() {
-            let Fpcalc {
-                duration,
-                fingerprint,
-                ..
-            } = fpcalc(path.as_str())?;
+            let fpcalc = fpcalc(path.as_str())?;
 
             let api = AcoustIdApi::new(self.client.to_string());
-            let res = api.request(duration, fingerprint).send()?;
+            let res = api.request(fpcalc.duration, fpcalc.fingerprint).send()?;
 
             let metadata = match res {
                 Response::Ok(res) => Metadata::from_response(res)?,
